@@ -1,0 +1,3236 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TeamHub - Takım Çalışma Alanı</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       🔐 SUPABASE CDN - Bu satırı değiştirme
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg-primary: #09090b;
+      --bg-secondary: #0f0f12;
+      --bg-tertiary: #18181b;
+      --bg-card: #1f1f23;
+      --border: rgba(255,255,255,0.06);
+      --border-hover: rgba(255,255,255,0.1);
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --text-dim: #52525b;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.3);
+      --purple: #8b5cf6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --pink: #ec4899;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden { display: none !important; }
+
+    /* ========== AUTH PAGE ========== */
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-bg-shapes {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .auth-shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.15;
+    }
+
+    .auth-shape-1 {
+      width: 600px;
+      height: 600px;
+      background: var(--accent);
+      top: -200px;
+      right: -100px;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .auth-shape-2 {
+      width: 400px;
+      height: 400px;
+      background: var(--purple);
+      bottom: -100px;
+      left: -100px;
+      animation: float 15s ease-in-out infinite reverse;
+    }
+
+    .auth-shape-3 {
+      width: 300px;
+      height: 300px;
+      background: var(--pink);
+      top: 40%;
+      left: 30%;
+      animation: float 18s ease-in-out infinite;
+    }
+
+    .auth-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(31, 31, 35, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .auth-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .auth-logo-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px var(--accent-glow);
+      font-size: 24px;
+    }
+
+    .auth-logo-text {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff, var(--text-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .auth-header h1 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .auth-header p {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .auth-alert {
+      padding: 14px 16px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .auth-alert-error {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .auth-alert-success {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 14px 16px 14px 48px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .form-input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .auth-submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-family: inherit;
+      box-shadow: 0 4px 20px var(--accent-glow);
+      margin-top: 8px;
+      transition: all 0.2s;
+    }
+
+    .auth-submit-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px var(--accent-glow);
+    }
+
+    .auth-submit-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .auth-footer p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .auth-footer button {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 4px;
+      font-size: 14px;
+    }
+
+    .auth-features {
+      display: none;
+      flex: 1;
+      background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+    }
+
+    @media (min-width: 1024px) {
+      .auth-features { display: flex; }
+    }
+
+    .auth-features-content { max-width: 500px; }
+
+    .auth-features h2 {
+      font-size: 36px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .auth-features-subtitle {
+      color: var(--text-muted);
+      font-size: 18px;
+      margin-bottom: 40px;
+    }
+
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(99, 102, 241, 0.15);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+      font-size: 20px;
+    }
+
+    .feature-text h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .feature-text p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* ========== MAIN APP ========== */
+    .app {
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ========== SIDEBAR ========== */
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(180deg, var(--bg-tertiary), var(--bg-primary));
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        transform: translateX(-100%);
+        z-index: 50;
+        transition: transform 0.3s;
+      }
+      .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 0 0 50px rgba(0,0,0,0.5);
+      }
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 40;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px var(--accent-glow);
+      font-size: 20px;
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff, var(--text-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .workspace-section {
+      padding: 16px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+      padding: 0 12px;
+    }
+
+    .workspace-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 4px;
+      position: relative;
+    }
+
+    .workspace-item:hover {
+      background: rgba(255,255,255,0.04);
+    }
+
+    .workspace-item.active {
+      background: rgba(99, 102, 241, 0.15);
+    }
+
+    .workspace-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 24px;
+      background: var(--accent);
+      border-radius: 0 4px 4px 0;
+    }
+
+    .workspace-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 4px;
+    }
+
+    .workspace-name {
+      font-weight: 600;
+      font-size: 14px;
+      flex: 1;
+    }
+
+    .workspace-actions {
+      display: flex;
+      gap: 2px;
+      opacity: 0;
+    }
+
+    .workspace-item:hover .workspace-actions {
+      opacity: 1;
+    }
+
+    .add-workspace-btn {
+      width: 100%;
+      padding: 14px;
+      border: 2px dashed #27272a;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+      margin-top: 8px;
+      transition: all 0.2s;
+    }
+
+    .add-workspace-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent-hover);
+      background: rgba(99, 102, 241, 0.08);
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .user-details { flex: 1; min-width: 0; }
+
+    .user-name {
+      font-size: 14px;
+      font-weight: 600;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-email {
+      font-size: 12px;
+      color: var(--text-dim);
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .logout-btn {
+      width: 100%;
+      padding: 12px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 10px;
+      color: var(--danger);
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .logout-btn:hover {
+      background: rgba(239, 68, 68, 0.15);
+    }
+
+    /* ========== MAIN CONTENT ========== */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+    }
+
+    .topbar {
+      height: 70px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15, 15, 18, 0.8);
+      backdrop-filter: blur(20px);
+    }
+
+    .menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 8px;
+      font-size: 20px;
+    }
+
+    @media (max-width: 1024px) {
+      .menu-btn { display: block; }
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .breadcrumb-current {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .topbar-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .search-box {
+      position: relative;
+      width: 280px;
+    }
+
+    @media (max-width: 768px) {
+      .search-box { display: none; }
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 16px 10px 44px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    /* ========== NAV TABS ========== */
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 16px;
+      margin-bottom: 24px;
+      width: fit-content;
+      flex-wrap: wrap;
+    }
+
+    .nav-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .nav-tab.active {
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      color: #fff;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    /* ========== DASHBOARD ========== */
+    .dashboard-header { margin-bottom: 28px; }
+
+    .dashboard-title {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #fff, var(--text-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .dashboard-subtitle {
+      color: var(--text-muted);
+      font-size: 16px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+
+    .stat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 20px;
+    }
+
+    @media (max-width: 1200px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    /* Progress */
+    .progress-section {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    @media (max-width: 500px) {
+      .progress-section { flex-direction: column; }
+    }
+
+    .progress-stats { flex: 1; }
+
+    .progress-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .progress-stat:last-child { border-bottom: none; }
+
+    .progress-stat-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .progress-stat-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 4px;
+    }
+
+    .progress-stat-value {
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    /* Activity */
+    .activity-list { max-height: 400px; overflow-y: auto; }
+
+    .activity-item {
+      display: flex;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .activity-item:last-child { border-bottom: none; }
+
+    .activity-avatar {
+      width: 40px;
+      height: 40px;
+      background: rgba(99, 102, 241, 0.15);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .activity-content { flex: 1; }
+
+    .activity-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .activity-text strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .activity-time {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* ========== KANBAN ========== */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      min-height: 500px;
+    }
+
+    @media (max-width: 1400px) {
+      .kanban-board { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .kanban-board { grid-template-columns: 1fr; }
+    }
+
+    .kanban-column {
+      background: rgba(255,255,255,0.02);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      min-height: 400px;
+    }
+
+    .kanban-column.drag-over {
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .kanban-column-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .kanban-column-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 4px;
+    }
+
+    .kanban-column-title {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .kanban-column-count {
+      margin-left: auto;
+      background: rgba(255,255,255,0.08);
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .kanban-cards {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 100px;
+    }
+
+    .kanban-card {
+      background: linear-gradient(145deg, var(--bg-card), var(--bg-tertiary));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      cursor: grab;
+      transition: all 0.2s;
+    }
+
+    .kanban-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+
+    .kanban-card.dragging {
+      opacity: 0.5;
+    }
+
+    .kanban-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .priority-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .kanban-card-actions {
+      display: flex;
+      gap: 2px;
+      opacity: 0;
+    }
+
+    .kanban-card:hover .kanban-card-actions {
+      opacity: 1;
+    }
+
+    .kanban-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .kanban-card-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .kanban-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .kanban-card-due {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .kanban-card-due.overdue {
+      color: var(--danger);
+    }
+
+    .tag {
+      padding: 2px 8px;
+      background: rgba(99, 102, 241, 0.15);
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--accent-hover);
+    }
+
+    .kanban-add-btn {
+      width: 100%;
+      padding: 12px;
+      border: 2px dashed #27272a;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--text-dim);
+      font-weight: 500;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: inherit;
+      margin-top: 12px;
+      transition: all 0.2s;
+    }
+
+    .kanban-add-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent-hover);
+    }
+
+    /* ========== NOTES ========== */
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .note-card {
+      background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      transition: all 0.3s;
+    }
+
+    .note-card.pinned {
+      border-color: rgba(245, 158, 11, 0.3);
+      background: linear-gradient(145deg, rgba(245, 158, 11, 0.08), rgba(255,255,255,0.01));
+    }
+
+    .note-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    }
+
+    .note-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      gap: 12px;
+    }
+
+    .note-title {
+      font-size: 16px;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .note-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+    }
+
+    .note-card:hover .note-actions {
+      opacity: 1;
+    }
+
+    .note-content {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 16px;
+      white-space: pre-wrap;
+      display: -webkit-box;
+      -webkit-line-clamp: 6;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .note-meta {
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ========== FILES ========== */
+    .upload-area {
+      border: 2px dashed #27272a;
+      border-radius: 20px;
+      padding: 48px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 24px;
+    }
+
+    .upload-area:hover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .upload-area.drag-over {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .upload-icon {
+      width: 72px;
+      height: 72px;
+      background: rgba(99, 102, 241, 0.15);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      color: var(--accent);
+      font-size: 28px;
+    }
+
+    .upload-text {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .upload-hint {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .files-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .file-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .file-card:hover {
+      background: rgba(255,255,255,0.04);
+      transform: translateY(-2px);
+    }
+
+    .file-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 28px;
+    }
+
+    .file-name {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .file-size {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .file-date {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .file-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+      opacity: 0;
+    }
+
+    .file-card:hover .file-actions {
+      opacity: 1;
+    }
+
+    /* ========== TEAM ========== */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .team-card {
+      background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      text-align: center;
+      position: relative;
+      transition: all 0.3s;
+    }
+
+    .team-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+    }
+
+    .team-card-delete {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 4px;
+      opacity: 0;
+    }
+
+    .team-card:hover .team-card-delete {
+      opacity: 1;
+    }
+
+    .team-avatar {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin: 0 auto 16px;
+      position: relative;
+    }
+
+    .team-status {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 3px solid var(--bg-tertiary);
+    }
+
+    .team-status.online { background: var(--success); }
+    .team-status.away { background: var(--warning); }
+    .team-status.offline { background: var(--text-dim); }
+
+    .team-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .team-role {
+      font-size: 14px;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .team-email {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* ========== TIMELINE ========== */
+    .timeline-container { max-width: 800px; }
+
+    .timeline-item {
+      display: flex;
+      gap: 20px;
+      position: relative;
+      padding-bottom: 24px;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 48px;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, #27272a, transparent);
+    }
+
+    .timeline-item:last-child::before { display: none; }
+
+    .timeline-dot {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .timeline-content {
+      flex: 1;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .timeline-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .timeline-avatar {
+      width: 28px;
+      height: 28px;
+      background: rgba(99, 102, 241, 0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .timeline-time {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .timeline-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    /* ========== EMPTY STATE ========== */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .empty-icon {
+      width: 80px;
+      height: 80px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      color: #3f3f46;
+      font-size: 32px;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    /* ========== NO WORKSPACE ========== */
+    .no-workspace {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 140px);
+      text-align: center;
+      padding: 40px;
+    }
+
+    .no-workspace-icon {
+      width: 120px;
+      height: 120px;
+      background: linear-gradient(145deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
+      border-radius: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+      color: var(--accent);
+      font-size: 48px;
+    }
+
+    .no-workspace h2 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .no-workspace p {
+      color: var(--text-muted);
+      font-size: 16px;
+      margin-bottom: 28px;
+      max-width: 400px;
+    }
+
+    /* ========== BUTTONS ========== */
+    .primary-btn {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+      box-shadow: 0 4px 20px var(--accent-glow);
+      transition: all 0.2s;
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px var(--accent-glow);
+    }
+
+    .secondary-btn {
+      padding: 12px 24px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .secondary-btn:hover {
+      background: rgba(255,255,255,0.08);
+    }
+
+    .danger-btn {
+      padding: 12px 24px;
+      background: var(--danger);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-primary);
+    }
+
+    .icon-btn-sm {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .icon-btn-sm:hover {
+      background: rgba(255,255,255,0.08);
+      color: var(--text-secondary);
+    }
+
+    /* ========== MODAL ========== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: linear-gradient(145deg, var(--bg-card), var(--bg-tertiary));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-header h3 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .modal-body { padding: 24px; }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 500px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
+
+    .form-input-full {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .form-input-full:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    textarea.form-input-full {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    select.form-input-full {
+      cursor: pointer;
+    }
+
+    .color-picker {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .color-option {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      cursor: pointer;
+      border: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .color-option:hover { transform: scale(1.1); }
+
+    .color-option.selected {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+    }
+
+    .avatar-picker {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .avatar-option {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      background: rgba(255,255,255,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .avatar-option.selected {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.15);
+    }
+
+    /* ========== CONFIRM DIALOG ========== */
+    .confirm-dialog {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .confirm-icon {
+      width: 64px;
+      height: 64px;
+      background: rgba(239, 68, 68, 0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      color: var(--danger);
+      font-size: 28px;
+    }
+
+    .confirm-dialog h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .confirm-dialog p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    /* ========== TOAST ========== */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 16px 20px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 500;
+      font-size: 14px;
+      z-index: 9999;
+      animation: fadeIn 0.3s ease;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+
+    .toast-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+
+    .toast-error {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+
+    /* ========== LOADING ========== */
+    .loading-screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+    }
+
+    .loader {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     📌 AUTH PAGE - Giriş/Kayıt Ekranı
+═══════════════════════════════════════════════════════════════════════════ -->
+<div id="auth-page" class="auth-page">
+  <div class="auth-bg-shapes">
+    <div class="auth-shape auth-shape-1"></div>
+    <div class="auth-shape auth-shape-2"></div>
+    <div class="auth-shape auth-shape-3"></div>
+  </div>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="auth-logo-icon">🏢</div>
+        <span class="auth-logo-text">TeamHub</span>
+      </div>
+
+      <div class="auth-header">
+        <h1 id="auth-title">Hoş Geldiniz!</h1>
+        <p id="auth-subtitle">Devam etmek için giriş yapın</p>
+      </div>
+
+      <form id="auth-form" class="auth-form">
+        <div id="auth-alert" class="auth-alert hidden"></div>
+
+        <div id="name-field" class="form-group hidden">
+          <label class="form-label">Ad Soyad</label>
+          <div class="input-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" id="auth-name" class="form-input" placeholder="Ad Soyad">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">E-posta</label>
+          <div class="input-wrapper">
+            <span class="input-icon">✉️</span>
+            <input type="email" id="auth-email" class="form-input" placeholder="ornek@email.com" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Şifre</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="auth-password" class="form-input" placeholder="••••••••" required minlength="6">
+            <button type="button" class="password-toggle" onclick="togglePassword()">👁️</button>
+          </div>
+        </div>
+
+        <button type="submit" id="auth-submit" class="auth-submit-btn">
+          Giriş Yap
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <p>
+          <span id="auth-footer-text">Hesabınız yok mu?</span>
+          <button type="button" id="auth-toggle" onclick="toggleAuthMode()">Kayıt Ol</button>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-features">
+    <div class="auth-features-content">
+      <h2>Projelerinizi Kolayca Yönetin</h2>
+      <p class="auth-features-subtitle">Takımınızla birlikte daha verimli çalışın</p>
+
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-icon">📋</div>
+          <div class="feature-text">
+            <h3>Kanban Board</h3>
+            <p>Görevlerinizi sürükle-bırak ile yönetin</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">👥</div>
+          <div class="feature-text">
+            <h3>Takım Yönetimi</h3>
+            <p>Üyeleri ekleyin ve görev atayın</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📁</div>
+          <div class="feature-text">
+            <h3>Dosya Paylaşımı</h3>
+            <p>Dosyalarınızı güvenle saklayın</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">⏱️</div>
+          <div class="feature-text">
+            <h3>Aktivite Takibi</h3>
+            <p>Tüm değişiklikleri takip edin</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     📌 MAIN APP - Ana Uygulama
+═══════════════════════════════════════════════════════════════════════════ -->
+<div id="main-app" class="app hidden">
+  
+  <!-- Sidebar Overlay (Mobile) -->
+  <div id="sidebar-overlay" class="sidebar-overlay hidden" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">🏢</div>
+        <span class="logo-text">TeamHub</span>
+      </div>
+    </div>
+
+    <div class="workspace-section">
+      <div class="section-title">Çalışma Alanları</div>
+      <div id="workspace-list"></div>
+      <button class="add-workspace-btn" onclick="openWorkspaceModal()">
+        ➕ Yeni Alan
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">👤</div>
+        <div class="user-details">
+          <span class="user-name" id="user-name">Kullanıcı</span>
+          <span class="user-email" id="user-email">email@example.com</span>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()">
+        🚪 Çıkış Yap
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <header class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="breadcrumb">
+        <span id="breadcrumb-workspace">Workspace</span>
+        <span>›</span>
+        <span class="breadcrumb-current" id="breadcrumb-view">Dashboard</span>
+      </div>
+      <div class="topbar-actions">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" placeholder="Ara..." id="search-input">
+        </div>
+      </div>
+    </header>
+
+    <div class="content" id="main-content">
+      <!-- İçerik buraya dinamik olarak yüklenecek -->
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     📌 MODALS
+═══════════════════════════════════════════════════════════════════════════ -->
+
+<!-- Workspace Modal -->
+<div id="workspace-modal" class="modal-overlay hidden" onclick="closeModal('workspace-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="workspace-modal-title">Yeni Çalışma Alanı</h3>
+      <button class="icon-btn" onclick="closeModal('workspace-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">Alan Adı *</label>
+        <input type="text" id="workspace-name" class="form-input-full" placeholder="örn: ABC Şirketi">
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">Açıklama</label>
+        <textarea id="workspace-desc" class="form-input-full" placeholder="Açıklama..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Renk</label>
+        <div class="color-picker" id="color-picker"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary-btn" onclick="closeModal('workspace-modal')">İptal</button>
+      <button class="primary-btn" onclick="saveWorkspace()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div id="task-modal" class="modal-overlay hidden" onclick="closeModal('task-modal')">
+  <div class="modal-content" style="max-width:700px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="task-modal-title">Yeni Görev</h3>
+      <button class="icon-btn" onclick="closeModal('task-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">Başlık *</label>
+        <input type="text" id="task-title" class="form-input-full" placeholder="Görev başlığı...">
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">Açıklama</label>
+        <textarea id="task-desc" class="form-input-full" placeholder="Detaylar..."></textarea>
+      </div>
+      <div class="form-row" style="margin-bottom:16px">
+        <div class="form-group">
+          <label class="form-label">Öncelik</label>
+          <select id="task-priority" class="form-input-full">
+            <option value="low">Düşük</option>
+            <option value="medium" selected>Orta</option>
+            <option value="high">Yüksek</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Durum</label>
+          <select id="task-status" class="form-input-full">
+            <option value="todo">Yapılacak</option>
+            <option value="inprogress">Devam Ediyor</option>
+            <option value="review">İnceleme</option>
+            <option value="done">Tamamlandı</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Atanan Kişi</label>
+          <select id="task-assignee" class="form-input-full">
+            <option value="">Seçin...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bitiş Tarihi</label>
+          <input type="date" id="task-due" class="form-input-full">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary-btn" onclick="closeModal('task-modal')">İptal</button>
+      <button class="primary-btn" onclick="saveTask()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Note Modal -->
+<div id="note-modal" class="modal-overlay hidden" onclick="closeModal('note-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="note-modal-title">Yeni Not</h3>
+      <button class="icon-btn" onclick="closeModal('note-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">Başlık *</label>
+        <input type="text" id="note-title" class="form-input-full" placeholder="Not başlığı...">
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">İçerik</label>
+        <textarea id="note-content" class="form-input-full" style="min-height:200px" placeholder="Notunuz..."></textarea>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="note-pinned" style="width:18px;height:18px">
+          <span style="font-size:14px;color:var(--text-secondary)">Sabitle</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary-btn" onclick="closeModal('note-modal')">İptal</button>
+      <button class="primary-btn" onclick="saveNote()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Member Modal -->
+<div id="member-modal" class="modal-overlay hidden" onclick="closeModal('member-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Yeni Üye Ekle</h3>
+      <button class="icon-btn" onclick="closeModal('member-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">Avatar</label>
+        <div class="avatar-picker" id="avatar-picker"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">İsim *</label>
+        <input type="text" id="member-name" class="form-input-full" placeholder="Ad Soyad">
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">E-posta</label>
+        <input type="email" id="member-email" class="form-input-full" placeholder="email@example.com">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Rol *</label>
+          <input type="text" id="member-role" class="form-input-full" placeholder="örn: Developer">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Durum</label>
+          <select id="member-status" class="form-input-full">
+            <option value="online">Çevrimiçi</option>
+            <option value="away">Uzakta</option>
+            <option value="offline" selected>Çevrimdışı</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary-btn" onclick="closeModal('member-modal')">İptal</button>
+      <button class="primary-btn" onclick="saveMember()">Ekle</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div id="confirm-modal" class="modal-overlay hidden" onclick="closeModal('confirm-modal')">
+  <div class="confirm-dialog" onclick="event.stopPropagation()">
+    <div class="confirm-icon">⚠️</div>
+    <h3 id="confirm-title">Silmek istediğinize emin misiniz?</h3>
+    <p id="confirm-message">Bu işlem geri alınamaz.</p>
+    <div class="confirm-actions">
+      <button class="secondary-btn" onclick="closeModal('confirm-modal')">İptal</button>
+      <button class="danger-btn" id="confirm-btn" onclick="confirmAction()">Sil</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden"></div>
+
+<!-- File Input (Hidden) -->
+<input type="file" id="file-input" multiple style="display:none" onchange="handleFileUpload(event)">
+
+
+<script>
+// ╔════════════════════════════════════════════════════════════════════════════════╗
+// ║                                                                                 ║
+// ║   🔐 SUPABASE CONFIGURATION - BU ALANI DOLDUR!                                 ║
+// ║                                                                                 ║
+// ║   Supabase Dashboard → Settings → API bölümünden al:                           ║
+// ║                                                                                 ║
+// ╚════════════════════════════════════════════════════════════════════════════════╝
+
+const SUPABASE_URL = ''        // ← BURAYA PROJECT URL YAZ (https://xxxxx.supabase.co)
+const SUPABASE_ANON_KEY = ''   // ← BURAYA ANON PUBLIC KEY YAZ (eyJhbGciOiJ... ile başlar)
+const STORAGE_BUCKET = 'workspace-files'  // ← Storage bucket adı (değiştirme)
+
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+// Supabase Client
+let supabase = null
+if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+}
+
+// ============================================================================
+// STATE
+// ============================================================================
+let currentUser = null
+let workspaces = []
+let activeWorkspaceId = null
+let tasks = []
+let notes = []
+let files = []
+let members = []
+let timeline = []
+let currentView = 'dashboard'
+let isLoginMode = true
+let editingWorkspace = null
+let editingTask = null
+let editingNote = null
+let selectedColor = '#6366f1'
+let selectedAvatar = '👤'
+let confirmCallback = null
+
+const colors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6']
+const avatars = ['👨‍💼', '👩‍💻', '👨‍🎨', '👩‍📊', '👨‍🔬', '👩‍🏫', '👨‍💻', '👩‍🔧', '🧑‍🚀', '🧑‍🎤']
+
+const priorities = {
+  high: { label: 'Yüksek', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+  medium: { label: 'Orta', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+  low: { label: 'Düşük', color: '#10b981', bg: 'rgba(16,185,129,0.15)' }
+}
+
+const statuses = {
+  todo: { label: 'Yapılacak', color: '#6366f1' },
+  inprogress: { label: 'Devam Ediyor', color: '#f59e0b' },
+  review: { label: 'İnceleme', color: '#8b5cf6' },
+  done: { label: 'Tamamlandı', color: '#10b981' }
+}
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+const $ = (id) => document.getElementById(id)
+const formatDate = (d) => new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+const formatDateShort = (d) => new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })
+const formatFileSize = (bytes) => {
+  if (!bytes) return '0 B'
+  const k = 1024, sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
+function showToast(message, type = 'success') {
+  const toast = $('toast')
+  toast.className = `toast toast-${type}`
+  toast.innerHTML = `${type === 'success' ? '✅' : '❌'} ${message}`
+  toast.classList.remove('hidden')
+  setTimeout(() => toast.classList.add('hidden'), 4000)
+}
+
+function closeModal(id) {
+  $(id).classList.add('hidden')
+}
+
+function showConfirm(title, message, callback) {
+  $('confirm-title').textContent = title
+  $('confirm-message').textContent = message
+  confirmCallback = callback
+  $('confirm-modal').classList.remove('hidden')
+}
+
+function confirmAction() {
+  if (confirmCallback) confirmCallback()
+  closeModal('confirm-modal')
+}
+
+// ============================================================================
+// AUTH
+// ============================================================================
+function togglePassword() {
+  const input = $('auth-password')
+  input.type = input.type === 'password' ? 'text' : 'password'
+}
+
+function toggleAuthMode() {
+  isLoginMode = !isLoginMode
+  $('auth-title').textContent = isLoginMode ? 'Hoş Geldiniz!' : 'Hesap Oluştur'
+  $('auth-subtitle').textContent = isLoginMode ? 'Devam etmek için giriş yapın' : 'Hemen ücretsiz başlayın'
+  $('auth-submit').textContent = isLoginMode ? 'Giriş Yap' : 'Kayıt Ol'
+  $('auth-footer-text').textContent = isLoginMode ? 'Hesabınız yok mu?' : 'Zaten hesabınız var mı?'
+  $('auth-toggle').textContent = isLoginMode ? 'Kayıt Ol' : 'Giriş Yap'
+  $('name-field').classList.toggle('hidden', isLoginMode)
+  $('auth-alert').classList.add('hidden')
+}
+
+function showAuthError(msg) {
+  const alert = $('auth-alert')
+  alert.className = 'auth-alert auth-alert-error'
+  alert.innerHTML = `❌ ${msg}`
+  alert.classList.remove('hidden')
+}
+
+function showAuthSuccess(msg) {
+  const alert = $('auth-alert')
+  alert.className = 'auth-alert auth-alert-success'
+  alert.innerHTML = `✅ ${msg}`
+  alert.classList.remove('hidden')
+}
+
+$('auth-form').addEventListener('submit', async (e) => {
+  e.preventDefault()
+  
+  if (!supabase) {
+    showAuthError('Supabase yapılandırması eksik! SUPABASE_URL ve SUPABASE_ANON_KEY değerlerini girin.')
+    return
+  }
+  
+  const email = $('auth-email').value
+  const password = $('auth-password').value
+  const name = $('auth-name').value
+  
+  $('auth-submit').disabled = true
+  $('auth-submit').innerHTML = '⏳ Yükleniyor...'
+  
+  try {
+    if (isLoginMode) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+      currentUser = data.user
+      showApp()
+    } else {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name } }
+      })
+      if (error) throw error
+      if (data.user && !data.user.confirmed_at) {
+        showAuthSuccess('Kayıt başarılı! E-posta doğrulaması gerekebilir.')
+      } else {
+        currentUser = data.user
+        showApp()
+      }
+    }
+  } catch (err) {
+    let msg = err.message
+    if (msg.includes('Invalid login')) msg = 'E-posta veya şifre hatalı'
+    else if (msg.includes('already registered')) msg = 'Bu e-posta zaten kayıtlı'
+    else if (msg.includes('Password should')) msg = 'Şifre en az 6 karakter olmalı'
+    showAuthError(msg)
+  } finally {
+    $('auth-submit').disabled = false
+    $('auth-submit').innerHTML = isLoginMode ? 'Giriş Yap' : 'Kayıt Ol'
+  }
+})
+
+async function logout() {
+  if (supabase) await supabase.auth.signOut()
+  currentUser = null
+  $('main-app').classList.add('hidden')
+  $('auth-page').classList.remove('hidden')
+}
+
+async function checkSession() {
+  if (!supabase) return
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.user) {
+    currentUser = session.user
+    showApp()
+  }
+}
+
+// ============================================================================
+// APP
+// ============================================================================
+async function showApp() {
+  $('auth-page').classList.add('hidden')
+  $('main-app').classList.remove('hidden')
+  
+  $('user-name').textContent = currentUser.user_metadata?.name || 'Kullanıcı'
+  $('user-email').textContent = currentUser.email
+  
+  await loadWorkspaces()
+  renderColorPicker()
+  renderAvatarPicker()
+}
+
+function toggleSidebar() {
+  $('sidebar').classList.toggle('open')
+  $('sidebar-overlay').classList.toggle('hidden')
+}
+
+function closeSidebar() {
+  $('sidebar').classList.remove('open')
+  $('sidebar-overlay').classList.add('hidden')
+}
+
+// ============================================================================
+// WORKSPACE
+// ============================================================================
+async function loadWorkspaces() {
+  if (!supabase) return
+  
+  const { data, error } = await supabase
+    .from('workspaces')
+    .select('*')
+    .order('created_at', { ascending: false })
+  
+  if (error) {
+    showToast('Veriler yüklenemedi: ' + error.message, 'error')
+    return
+  }
+  
+  workspaces = data || []
+  
+  if (workspaces.length > 0 && !activeWorkspaceId) {
+    activeWorkspaceId = workspaces[0].id
+  }
+  
+  renderWorkspaces()
+  
+  if (activeWorkspaceId) {
+    await loadWorkspaceData()
+    renderView()
+  } else {
+    renderNoWorkspace()
+  }
+}
+
+function renderWorkspaces() {
+  const list = $('workspace-list')
+  list.innerHTML = workspaces.map(w => `
+    <div class="workspace-item ${w.id === activeWorkspaceId ? 'active' : ''}" onclick="selectWorkspace('${w.id}')">
+      <div class="workspace-color" style="background:${w.color}"></div>
+      <span class="workspace-name">${w.name}</span>
+      <div class="workspace-actions">
+        <button class="icon-btn-sm" onclick="event.stopPropagation();editWorkspace('${w.id}')">✏️</button>
+        <button class="icon-btn-sm" onclick="event.stopPropagation();deleteWorkspace('${w.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('')
+}
+
+async function selectWorkspace(id) {
+  activeWorkspaceId = id
+  renderWorkspaces()
+  await loadWorkspaceData()
+  renderView()
+  closeSidebar()
+}
+
+async function loadWorkspaceData() {
+  if (!supabase || !activeWorkspaceId) return
+  
+  const [tasksRes, notesRes, filesRes, membersRes, timelineRes] = await Promise.all([
+    supabase.from('tasks').select('*').eq('workspace_id', activeWorkspaceId).order('created_at', { ascending: false }),
+    supabase.from('notes').select('*').eq('workspace_id', activeWorkspaceId).order('pinned', { ascending: false }).order('created_at', { ascending: false }),
+    supabase.from('files').select('*').eq('workspace_id', activeWorkspaceId).order('created_at', { ascending: false }),
+    supabase.from('members').select('*').eq('workspace_id', activeWorkspaceId),
+    supabase.from('timeline').select('*').eq('workspace_id', activeWorkspaceId).order('created_at', { ascending: false }).limit(50)
+  ])
+  
+  tasks = tasksRes.data || []
+  notes = notesRes.data || []
+  files = filesRes.data || []
+  members = membersRes.data || []
+  timeline = timelineRes.data || []
+}
+
+function openWorkspaceModal(workspace = null) {
+  editingWorkspace = workspace
+  $('workspace-modal-title').textContent = workspace ? 'Çalışma Alanını Düzenle' : 'Yeni Çalışma Alanı'
+  $('workspace-name').value = workspace?.name || ''
+  $('workspace-desc').value = workspace?.description || ''
+  selectedColor = workspace?.color || '#6366f1'
+  renderColorPicker()
+  $('workspace-modal').classList.remove('hidden')
+}
+
+function editWorkspace(id) {
+  const workspace = workspaces.find(w => w.id === id)
+  openWorkspaceModal(workspace)
+}
+
+async function saveWorkspace() {
+  const name = $('workspace-name').value.trim()
+  if (!name) {
+    showToast('Alan adı gerekli!', 'error')
+    return
+  }
+  
+  const data = {
+    name,
+    description: $('workspace-desc').value,
+    color: selectedColor
+  }
+  
+  try {
+    if (editingWorkspace) {
+      const { error } = await supabase.from('workspaces').update(data).eq('id', editingWorkspace.id)
+      if (error) throw error
+      showToast('Çalışma alanı güncellendi!')
+    } else {
+      data.user_id = currentUser.id
+      const { data: newWs, error } = await supabase.from('workspaces').insert(data).select().single()
+      if (error) throw error
+      activeWorkspaceId = newWs.id
+      showToast('Çalışma alanı oluşturuldu!')
+    }
+    
+    await loadWorkspaces()
+    closeModal('workspace-modal')
+  } catch (err) {
+    showToast('Hata: ' + err.message, 'error')
+  }
+}
+
+function deleteWorkspace(id) {
+  showConfirm('Çalışma Alanını Sil', 'Bu alan ve tüm içeriği silinecek. Devam?', async () => {
+    try {
+      const { error } = await supabase.from('workspaces').delete().eq('id', id)
+      if (error) throw error
+      
+      if (activeWorkspaceId === id) {
+        activeWorkspaceId = workspaces.find(w => w.id !== id)?.id || null
+      }
+      
+      await loadWorkspaces()
+      showToast('Çalışma alanı silindi!')
+    } catch (err) {
+      showToast('Hata: ' + err.message, 'error')
+    }
+  })
+}
+
+function renderColorPicker() {
+  $('color-picker').innerHTML = colors.map(c => `
+    <div class="color-option ${c === selectedColor ? 'selected' : ''}" 
+         style="background:${c}" 
+         onclick="selectedColor='${c}';renderColorPicker()"></div>
+  `).join('')
+}
+
+function renderAvatarPicker() {
+  $('avatar-picker').innerHTML = avatars.map(a => `
+    <div class="avatar-option ${a === selectedAvatar ? 'selected' : ''}" 
+         onclick="selectedAvatar='${a}';renderAvatarPicker()">${a}</div>
+  `).join('')
+}
+
+// ============================================================================
+// VIEWS
+// ============================================================================
+function setView(view) {
+  currentView = view
+  renderView()
+}
+
+function renderView() {
+  const workspace = workspaces.find(w => w.id === activeWorkspaceId)
+  if (!workspace) {
+    renderNoWorkspace()
+    return
+  }
+  
+  $('breadcrumb-workspace').textContent = workspace.name
+  $('breadcrumb-view').textContent = {
+    dashboard: 'Dashboard',
+    kanban: 'Kanban Board',
+    notes: 'Notlar',
+    files: 'Dosyalar',
+    team: 'Takım',
+    timeline: 'Timeline'
+  }[currentView]
+  
+  const content = $('main-content')
+  
+  // Nav tabs
+  let html = `
+    <nav class="nav-tabs">
+      <button class="nav-tab ${currentView === 'dashboard' ? 'active' : ''}" onclick="setView('dashboard')">🏠 Dashboard</button>
+      <button class="nav-tab ${currentView === 'kanban' ? 'active' : ''}" onclick="setView('kanban')">📋 Kanban</button>
+      <button class="nav-tab ${currentView === 'notes' ? 'active' : ''}" onclick="setView('notes')">📝 Notlar</button>
+      <button class="nav-tab ${currentView === 'files' ? 'active' : ''}" onclick="setView('files')">📁 Dosyalar</button>
+      <button class="nav-tab ${currentView === 'team' ? 'active' : ''}" onclick="setView('team')">👥 Takım</button>
+      <button class="nav-tab ${currentView === 'timeline' ? 'active' : ''}" onclick="setView('timeline')">⏱️ Timeline</button>
+    </nav>
+  `
+  
+  // View content
+  switch (currentView) {
+    case 'dashboard': html += renderDashboard(); break
+    case 'kanban': html += renderKanban(); break
+    case 'notes': html += renderNotes(); break
+    case 'files': html += renderFiles(); break
+    case 'team': html += renderTeam(); break
+    case 'timeline': html += renderTimeline(); break
+  }
+  
+  content.innerHTML = html
+}
+
+function renderNoWorkspace() {
+  $('main-content').innerHTML = `
+    <div class="no-workspace">
+      <div class="no-workspace-icon">🏢</div>
+      <h2>TeamHub'a Hoş Geldiniz!</h2>
+      <p>Başlamak için ilk çalışma alanınızı oluşturun.</p>
+      <button class="primary-btn" onclick="openWorkspaceModal()">➕ Çalışma Alanı Oluştur</button>
+    </div>
+  `
+}
+
+// ============================================================================
+// DASHBOARD
+// ============================================================================
+function renderDashboard() {
+  const total = tasks.length
+  const done = tasks.filter(t => t.status === 'done').length
+  const inProgress = tasks.filter(t => t.status === 'inprogress').length
+  const highPriority = tasks.filter(t => t.priority === 'high' && t.status !== 'done').length
+  const progress = total ? Math.round((done / total) * 100) : 0
+  
+  return `
+    <div class="dashboard-header">
+      <h1 class="dashboard-title">Merhaba, ${currentUser.user_metadata?.name?.split(' ')[0] || 'Kullanıcı'}! 👋</h1>
+      <p class="dashboard-subtitle">${workspaces.find(w => w.id === activeWorkspaceId)?.name} çalışma alanına hoş geldiniz</p>
+    </div>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(99,102,241,0.2);color:#6366f1">📋</div>
+        <div>
+          <span class="stat-label">Toplam Görev</span>
+          <span class="stat-value">${total}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(16,185,129,0.2);color:#10b981">✅</div>
+        <div>
+          <span class="stat-label">Tamamlanan</span>
+          <span class="stat-value">${done}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(245,158,11,0.2);color:#f59e0b">⏳</div>
+        <div>
+          <span class="stat-label">Devam Eden</span>
+          <span class="stat-value">${inProgress}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(239,68,68,0.2);color:#ef4444">🚨</div>
+        <div>
+          <span class="stat-label">Yüksek Öncelik</span>
+          <span class="stat-value">${highPriority}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="dashboard-grid">
+      <div class="card">
+        <div class="card-header"><h3 class="card-title">Proje İlerlemesi</h3></div>
+        <div class="progress-section">
+          <div style="text-align:center">
+            <div style="font-size:48px;font-weight:800;color:var(--accent)">${progress}%</div>
+            <div style="color:var(--text-muted);font-size:14px">Tamamlandı</div>
+          </div>
+          <div class="progress-stats">
+            ${Object.entries(statuses).map(([key, { label, color }]) => `
+              <div class="progress-stat">
+                <span class="progress-stat-label">
+                  <span class="progress-stat-dot" style="background:${color}"></span>
+                  ${label}
+                </span>
+                <span class="progress-stat-value">${tasks.filter(t => t.status === key).length}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header"><h3 class="card-title">Son Aktiviteler</h3></div>
+        <div class="activity-list">
+          ${timeline.slice(0, 8).map(item => `
+            <div class="activity-item">
+              <div class="activity-avatar">${item.user_avatar || '👤'}</div>
+              <div class="activity-content">
+                <div class="activity-text"><strong>${item.user_name}</strong> ${item.text}</div>
+                <div class="activity-time">${formatDate(item.created_at)}</div>
+              </div>
+            </div>
+          `).join('') || '<div class="empty-state" style="padding:24px"><p>Henüz aktivite yok</p></div>'}
+        </div>
+      </div>
+    </div>
+  `
+}
+
+// ============================================================================
+// KANBAN
+// ============================================================================
+function renderKanban() {
+  return `
+    <div class="page-header">
+      <h1 class="page-title">Kanban Board</h1>
+      <button class="primary-btn" onclick="openTaskModal()">➕ Görev Ekle</button>
+    </div>
+    
+    <div class="kanban-board">
+      ${Object.entries(statuses).map(([key, { label, color }]) => `
+        <div class="kanban-column" id="column-${key}" 
+             ondragover="handleDragOver(event, '${key}')" 
+             ondragleave="handleDragLeave(event)" 
+             ondrop="handleDrop(event, '${key}')">
+          <div class="kanban-column-header">
+            <div class="kanban-column-dot" style="background:${color}"></div>
+            <span class="kanban-column-title">${label}</span>
+            <span class="kanban-column-count">${tasks.filter(t => t.status === key).length}</span>
+          </div>
+          <div class="kanban-cards">
+            ${tasks.filter(t => t.status === key).map(task => {
+              const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done'
+              const p = priorities[task.priority]
+              return `
+                <div class="kanban-card" draggable="true" 
+                     ondragstart="handleDragStart(event, '${task.id}')"
+                     ondragend="handleDragEnd(event)">
+                  <div class="kanban-card-header">
+                    <span class="priority-badge" style="background:${p.bg};color:${p.color}">🚩 ${p.label}</span>
+                    <div class="kanban-card-actions">
+                      <button class="icon-btn-sm" onclick="openTaskModal('${task.id}')">✏️</button>
+                      <button class="icon-btn-sm" onclick="deleteTask('${task.id}')">🗑️</button>
+                    </div>
+                  </div>
+                  <h4 class="kanban-card-title">${task.title}</h4>
+                  ${task.description ? `<p class="kanban-card-desc">${task.description}</p>` : ''}
+                  <div class="kanban-card-footer">
+                    ${task.due_date ? `<div class="kanban-card-due ${isOverdue ? 'overdue' : ''}">🕐 ${formatDateShort(task.due_date)}</div>` : ''}
+                    ${task.assignee ? `<span class="tag">${task.assignee}</span>` : ''}
+                  </div>
+                </div>
+              `
+            }).join('')}
+          </div>
+          <button class="kanban-add-btn" onclick="openTaskModal(null, '${key}')">➕ Ekle</button>
+        </div>
+      `).join('')}
+    </div>
+  `
+}
+
+let draggedTaskId = null
+
+function handleDragStart(e, id) {
+  draggedTaskId = id
+  e.target.classList.add('dragging')
+}
+
+function handleDragEnd(e) {
+  e.target.classList.remove('dragging')
+}
+
+function handleDragOver(e, status) {
+  e.preventDefault()
+  document.getElementById('column-' + status).classList.add('drag-over')
+}
+
+function handleDragLeave(e) {
+  e.target.closest('.kanban-column')?.classList.remove('drag-over')
+}
+
+async function handleDrop(e, status) {
+  e.preventDefault()
+  document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'))
+  
+  if (draggedTaskId) {
+    const task = tasks.find(t => t.id === draggedTaskId)
+    if (task && task.status !== status) {
+      try {
+        const { error } = await supabase.from('tasks').update({ status }).eq('id', draggedTaskId)
+        if (error) throw error
+        await addTimeline('task_moved', `"${task.title}" → ${statuses[status].label}`)
+        await loadWorkspaceData()
+        renderView()
+      } catch (err) {
+        showToast('Hata: ' + err.message, 'error')
+      }
+    }
+    draggedTaskId = null
+  }
+}
+
+// ============================================================================
+// TASK
+// ============================================================================
+function openTaskModal(taskId = null, status = 'todo') {
+  editingTask = taskId ? tasks.find(t => t.id === taskId) : null
+  $('task-modal-title').textContent = editingTask ? 'Görevi Düzenle' : 'Yeni Görev'
+  $('task-title').value = editingTask?.title || ''
+  $('task-desc').value = editingTask?.description || ''
+  $('task-priority').value = editingTask?.priority || 'medium'
+  $('task-status').value = editingTask?.status || status
+  $('task-assignee').innerHTML = '<option value="">Seçin...</option>' + members.map(m => `<option value="${m.name}" ${editingTask?.assignee === m.name ? 'selected' : ''}>${m.name}</option>`).join('')
+  $('task-due').value = editingTask?.due_date || ''
+  $('task-modal').classList.remove('hidden')
+}
+
+async function saveTask() {
+  const title = $('task-title').value.trim()
+  if (!title) {
+    showToast('Görev başlığı gerekli!', 'error')
+    return
+  }
+  
+  const data = {
+    title,
+    description: $('task-desc').value,
+    priority: $('task-priority').value,
+    status: $('task-status').value,
+    assignee: $('task-assignee').value,
+    due_date: $('task-due').value || null
+  }
+  
+  try {
+    if (editingTask) {
+      const { error } = await supabase.from('tasks').update(data).eq('id', editingTask.id)
+      if (error) throw error
+      await addTimeline('task_updated', `"${title}" güncellendi`)
+      showToast('Görev güncellendi!')
+    } else {
+      data.workspace_id = activeWorkspaceId
+      const { error } = await supabase.from('tasks').insert(data)
+      if (error) throw error
+      await addTimeline('task_created', `"${title}" oluşturuldu`)
+      showToast('Görev oluşturuldu!')
+    }
+    
+    await loadWorkspaceData()
+    closeModal('task-modal')
+    renderView()
+  } catch (err) {
+    showToast('Hata: ' + err.message, 'error')
+  }
+}
+
+function deleteTask(id) {
+  const task = tasks.find(t => t.id === id)
+  showConfirm('Görevi Sil', `"${task?.title}" silinecek. Devam?`, async () => {
+    try {
+      const { error } = await supabase.from('tasks').delete().eq('id', id)
+      if (error) throw error
+      await addTimeline('task_deleted', `"${task?.title}" silindi`)
+      await loadWorkspaceData()
+      renderView()
+      showToast('Görev silindi!')
+    } catch (err) {
+      showToast('Hata: ' + err.message, 'error')
+    }
+  })
+}
+
+// ============================================================================
+// NOTES
+// ============================================================================
+function renderNotes() {
+  return `
+    <div class="page-header">
+      <h1 class="page-title">Notlar</h1>
+      <button class="primary-btn" onclick="openNoteModal()">➕ Not Ekle</button>
+    </div>
+    
+    ${notes.length > 0 ? `
+      <div class="notes-grid">
+        ${notes.map(note => `
+          <div class="note-card ${note.pinned ? 'pinned' : ''}">
+            <div class="note-header">
+              <h3 class="note-title">${note.title}</h3>
+              <div class="note-actions">
+                <button class="icon-btn-sm" onclick="toggleNotePin('${note.id}')">${note.pinned ? '⭐' : '☆'}</button>
+                <button class="icon-btn-sm" onclick="openNoteModal('${note.id}')">✏️</button>
+                <button class="icon-btn-sm" onclick="deleteNote('${note.id}')">🗑️</button>
+              </div>
+            </div>
+            <p class="note-content">${note.content || ''}</p>
+            <div class="note-meta">🕐 ${formatDate(note.updated_at || note.created_at)}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : `
+      <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h3>Henüz not yok</h3>
+        <p>İlk notunuzu ekleyerek başlayın</p>
+      </div>
+    `}
+  `
+}
+
+function openNoteModal(noteId = null) {
+  editingNote = noteId ? notes.find(n => n.id === noteId) : null
+  $('note-modal-title').textContent = editingNote ? 'Notu Düzenle' : 'Yeni Not'
+  $('note-title').value = editingNote?.title || ''
+  $('note-content').value = editingNote?.content || ''
+  $('note-pinned').checked = editingNote?.pinned || false
+  $('note-modal').classList.remove('hidden')
+}
+
+async function saveNote() {
+  const title = $('note-title').value.trim()
+  if (!title) {
+    showToast('Not başlığı gerekli!', 'error')
+    return
+  }
+  
+  const data = {
+    title,
+    content: $('note-content').value,
+    pinned: $('note-pinned').checked
+  }
+  
+  try {
+    if (editingNote) {
+      const { error } = await supabase.from('notes').update(data).eq('id', editingNote.id)
+      if (error) throw error
+      showToast('Not güncellendi!')
+    } else {
+      data.workspace_id = activeWorkspaceId
+      const { error } = await supabase.from('notes').insert(data)
+      if (error) throw error
+      await addTimeline('note_created', `"${title}" notu oluşturuldu`)
+      showToast('Not oluşturuldu!')
+    }
+    
+    await loadWorkspaceData()
+    closeModal('note-modal')
+    renderView()
+  } catch (err) {
+    showToast('Hata: ' + err.message, 'error')
+  }
+}
+
+async function toggleNotePin(id) {
+  const note = notes.find(n => n.id === id)
+  try {
+    const { error } = await supabase.from('notes').update({ pinned: !note.pinned }).eq('id', id)
+    if (error) throw error
+    await loadWorkspaceData()
+    renderView()
+  } catch (err) {
+    showToast('Hata: ' + err.message, 'error')
+  }
+}
+
+function deleteNote(id) {
+  const note = notes.find(n => n.id === id)
+  showConfirm('Notu Sil', `"${note?.title}" silinecek. Devam?`, async () => {
+    try {
+      const { error } = await supabase.from('notes').delete().eq('id', id)
+      if (error) throw error
+      await loadWorkspaceData()
+      renderView()
+      showToast('Not silindi!')
+    } catch (err) {
+      showToast('Hata: ' + err.message, 'error')
+    }
+  })
+}
+
+// ============================================================================
+// FILES
+// ============================================================================
+function renderFiles() {
+  return `
+    <div class="page-header">
+      <h1 class="page-title">Dosyalar</h1>
+    </div>
+    
+    <div class="upload-area" onclick="$('file-input').click()" 
+         ondragover="event.preventDefault();this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="event.preventDefault();this.classList.remove('drag-over');handleFileDrop(event)">
+      <div class="upload-icon">📤</div>
+      <div class="upload-text">Dosya yüklemek için tıklayın</div>
+      <div class="upload-hint">veya dosyaları buraya sürükleyin</div>
+    </div>
+    
+    ${files.length > 0 ? `
+      <div class="files-grid">
+        ${files.map(file => {
+          const icon = getFileIcon(file.name)
+          return `
+            <div class="file-card">
+              <div class="file-icon" style="background:${icon.bg}">${icon.emoji}</div>
+              <div class="file-name" title="${file.name}">${file.name}</div>
+              <div class="file-size">${formatFileSize(file.size)}</div>
+              <div class="file-date">${formatDateShort(file.created_at)}</div>
+              <div class="file-actions">
+                <button class="icon-btn-sm" onclick="downloadFile('${file.id}')">⬇️</button>
+                <button class="icon-btn-sm" onclick="deleteFile('${file.id}', '${file.path}')">🗑️</button>
+              </div>
+            </div>
+          `
+        }).join('')}
+      </div>
+    ` : `
+      <div class="empty-state">
+        <div class="empty-icon">📁</div>
+        <h3>Henüz dosya yok</h3>
+        <p>Dosya yükleyerek başlayın</p>
+      </div>
+    `}
+  `
+}
+
+function getFileIcon(name) {
+  const ext = name?.split('.').pop()?.toLowerCase()
+  const icons = {
+    pdf: { emoji: '📄', bg: 'rgba(239,68,68,0.2)' },
+    doc: { emoji: '📝', bg: 'rgba(59,130,246,0.2)' },
+    docx: { emoji: '📝', bg: 'rgba(59,130,246,0.2)' },
+    xls: { emoji: '📊', bg: 'rgba(16,185,129,0.2)' },
+    xlsx: { emoji: '📊', bg: 'rgba(16,185,129,0.2)' },
+    jpg: { emoji: '🖼️', bg: 'rgba(236,72,153,0.2)' },
+    jpeg: { emoji: '🖼️', bg: 'rgba(236,72,153,0.2)' },
+    png: { emoji: '🖼️', bg: 'rgba(236,72,153,0.2)' },
+    mp4: { emoji: '🎬', bg: 'rgba(245,158,11,0.2)' },
+    zip: { emoji: '📦', bg: 'rgba(99,102,241,0.2)' }
+  }
+  return icons[ext] || { emoji: '📎', bg: 'rgba(99,102,241,0.2)' }
+}
+
+function handleFileDrop(e) {
+  const files = e.dataTransfer.files
+  if (files.length) {
+    $('file-input').files = files
+    handleFileUpload({ target: { files } })
+  }
+}
+
+async function handleFileUpload(e) {
+  const uploadedFiles = Array.from(e.target.files)
+  if (uploadedFiles.length === 0) return
+  
+  try {
+    for (const file of uploadedFiles) {
+      const filePath = `${currentUser.id}/${activeWorkspaceId}/${Date.now()}_${file.name}`
+      
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(filePath, file)
+      
+      if (uploadError) throw uploadError
+      
+      const { error: dbError } = await supabase.from('files').insert({
+        workspace_id: activeWorkspaceId,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        path: filePath,
+        uploaded_by: currentUser.user_metadata?.name || currentUser.email?.split('@')[0]
+      })
+      
+      if (dbError) throw dbError
+    }
+    
+    await addTimeline('file_uploaded', `${uploadedFiles.length} dosya yüklendi`)
+    await loadWorkspaceData()
+    renderView()
+    showToast(`${uploadedFiles.length} dosya yüklendi!`)
+  } catch (err) {
+    showToast('Dosya yüklenemedi: ' + err.message, 'error')
+  }
+  
+  $('file-input').value = ''
+}
+
+async function downloadFile(id) {
+  const file = files.find(f => f.id === id)
+  try {
+    const { data, error } = await supabase.storage.from(STORAGE_BUCKET).download(file.path)
+    if (error) throw error
+    
+    const url = URL.createObjectURL(data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = file.name
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    showToast('İndirme hatası: ' + err.message, 'error')
+  }
+}
+
+function deleteFile(id, path) {
+  showConfirm('Dosyayı Sil', 'Bu dosya silinecek. Devam?', async () => {
+    try {
+      await supabase.storage.from(STORAGE_BUCKET).remove([path])
+      const { error } = await supabase.from('files').delete().eq('id', id)
+      if (error) throw error
+      await loadWorkspaceData()
+      renderView()
+      showToast('Dosya silindi!')
+    } catch (err) {
+      showToast('Hata: ' + err.message, 'error')
+    }
+  })
+}
+
+// ============================================================================
+// TEAM
+// ============================================================================
+function renderTeam() {
+  return `
+    <div class="page-header">
+      <h1 class="page-title">Takım Üyeleri</h1>
+      <button class="primary-btn" onclick="openMemberModal()">➕ Üye Ekle</button>
+    </div>
+    
+    <div class="team-grid">
+      ${members.map(member => `
+        <div class="team-card">
+          <button class="team-card-delete" onclick="deleteMember('${member.id}')">✕</button>
+          <div class="team-avatar">
+            ${member.avatar || '👤'}
+            <span class="team-status ${member.status}"></span>
+          </div>
+          <div class="team-name">${member.name}</div>
+          <div class="team-role">${member.role}</div>
+          ${member.email ? `<div class="team-email">${member.email}</div>` : ''}
+        </div>
+      `).join('') || `
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="empty-icon">👥</div>
+          <h3>Henüz üye yok</h3>
+          <p>Takıma üye ekleyerek başlayın</p>
+        </div>
+      `}
+    </div>
+  `
+}
+
+function openMemberModal() {
+  selectedAvatar = '👤'
+  renderAvatarPicker()
+  $('member-name').value = ''
+  $('member-email').value = ''
+  $('member-role').value = ''
+  $('member-status').value = 'offline'
+  $('member-modal').classList.remove('hidden')
+}
+
+async function saveMember() {
+  const name = $('member-name').value.trim()
+  const role = $('member-role').value.trim()
+  
+  if (!name || !role) {
+    showToast('İsim ve rol gerekli!', 'error')
+    return
+  }
+  
+  try {
+    const { error } = await supabase.from('members').insert({
+      workspace_id: activeWorkspaceId,
+      name,
+      email: $('member-email').value,
+      role,
+      avatar: selectedAvatar,
+      status: $('member-status').value
+    })
+    
+    if (error) throw error
+    
+    await addTimeline('member_added', `${name} takıma eklendi`)
+    await loadWorkspaceData()
+    closeModal('member-modal')
+    renderView()
+    showToast('Üye eklendi!')
+  } catch (err) {
+    showToast('Hata: ' + err.message, 'error')
+  }
+}
+
+function deleteMember(id) {
+  const member = members.find(m => m.id === id)
+  showConfirm('Üyeyi Çıkar', `${member?.name} çıkarılacak. Devam?`, async () => {
+    try {
+      const { error } = await supabase.from('members').delete().eq('id', id)
+      if (error) throw error
+      await loadWorkspaceData()
+      renderView()
+      showToast('Üye çıkarıldı!')
+    } catch (err) {
+      showToast('Hata: ' + err.message, 'error')
+    }
+  })
+}
+
+// ============================================================================
+// TIMELINE
+// ============================================================================
+function renderTimeline() {
+  return `
+    <h1 class="page-title" style="margin-bottom:24px">Timeline</h1>
+    
+    <div class="timeline-container">
+      ${timeline.map(item => `
+        <div class="timeline-item">
+          <div class="timeline-dot">✓</div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <div class="timeline-user">
+                <span class="timeline-avatar">${item.user_avatar || '👤'}</span>
+                ${item.user_name}
+              </div>
+              <span class="timeline-time">${formatDate(item.created_at)}</span>
+            </div>
+            <p class="timeline-text">${item.text}</p>
+          </div>
+        </div>
+      `).join('') || `
+        <div class="empty-state">
+          <div class="empty-icon">⏱️</div>
+          <h3>Henüz aktivite yok</h3>
+          <p>Aktiviteler burada görünecek</p>
+        </div>
+      `}
+    </div>
+  `
+}
+
+async function addTimeline(type, text) {
+  if (!supabase || !activeWorkspaceId) return
+  try {
+    await supabase.from('timeline').insert({
+      workspace_id: activeWorkspaceId,
+      type,
+      text,
+      user_name: currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'Kullanıcı',
+      user_avatar: '👤'
+    })
+  } catch (err) {
+    console.error('Timeline error:', err)
+  }
+}
+
+// ============================================================================
+// INIT
+// ============================================================================
+checkSession()
+</script>
+
+</body>
+</html>
